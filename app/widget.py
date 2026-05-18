@@ -50,6 +50,7 @@ from app.config import (
     WINDOW_WIDTH,
     YELLOW,
 )
+from app.autostart import is_autostart_enabled, set_autostart_enabled
 from app.data import GlucoseReading
 from app.settings import SettingsDialog
 
@@ -467,6 +468,10 @@ class GlucoseWidget(QWidget):
         self._drag_action = QAction("Drag and Drop aktivieren", self)
         self._drag_action.setCheckable(True)
         self._drag_action.toggled.connect(self.set_drag_enabled)
+        self._autostart_action = QAction("Autostart aktivieren", self)
+        self._autostart_action.setCheckable(True)
+        self._autostart_action.setChecked(is_autostart_enabled())
+        self._autostart_action.toggled.connect(self._set_autostart_enabled)
         refresh_action = QAction("Refresh now", self)
         refresh_action.triggered.connect(self._service.refresh_now)
         settings_action = QAction("Settings", self)
@@ -475,6 +480,7 @@ class GlucoseWidget(QWidget):
         quit_action.triggered.connect(QApplication.quit)
 
         menu.addAction(self._drag_action)
+        menu.addAction(self._autostart_action)
         menu.addSeparator()
         menu.addAction(refresh_action)
         menu.addAction(settings_action)
@@ -498,6 +504,22 @@ class GlucoseWidget(QWidget):
         if enabled:
             self._fade_in()
             self.idle_timer.start()
+
+    def _set_autostart_enabled(self, enabled: bool) -> None:
+        try:
+            set_autostart_enabled(enabled)
+        except Exception as exc:
+            if hasattr(self, "_autostart_action"):
+                self._autostart_action.blockSignals(True)
+                self._autostart_action.setChecked(is_autostart_enabled())
+                self._autostart_action.blockSignals(False)
+            if self._tray.isVisible():
+                self._tray.showMessage(
+                    "Autostart konnte nicht geaendert werden",
+                    str(exc),
+                    QSystemTrayIcon.MessageIcon.Warning,
+                    5000,
+                )
 
     def _sync_window_interaction(self) -> None:
         if not hasattr(ctypes, "windll") or int(self.winId()) == 0:

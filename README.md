@@ -46,6 +46,7 @@ dextop/
 ├─ Dextop.py              # App Einstiegspunkt
 ├─ app/
 │  ├─ config.py           # Pfade, Farben, Fonts, Groessen
+│  ├─ autostart.py        # Windows Autostart per Benutzer-Run-Key
 │  ├─ data.py             # Dexcom Share Polling und mmol/L Umrechnung
 │  ├─ settings.py         # Settings Dialog und verschluesselte Speicherung
 │  └─ widget.py           # QPainter Overlay Rendering und Interaktion
@@ -103,6 +104,7 @@ Hinweis: PyInstaller-Onefile-EXEs koennen von einzelnen Security-Produkten als u
 - Standardmodus: Widget ist klickdurchlaessig und blockiert keine Fenster darunter
 - Tray Icon: Kontextmenue oeffnen
 - `Drag and Drop aktivieren`: Widget wird interaktiv und kann per Linksklick verschoben werden
+- `Autostart aktivieren`: startet das Overlay automatisch beim Windows Login
 - `Refresh now`: Dexcom Wert sofort neu abrufen
 - `Settings`: Zugangsdaten, Region, Grenzwerte und Fade konfigurieren
 - `Quit`: Overlay beenden
@@ -118,6 +120,7 @@ Lokal gespeicherte Daten:
 ```text
 %APPDATA%/dextop/settings.ini
 %APPDATA%/dextop/fonts/
+HKCU\Software\Microsoft\Windows\CurrentVersion\Run\CrimsonGlucoseOverlay
 ```
 
 Credentials werden mit `cryptography.fernet` verschluesselt. Der Schluessel wird maschinenbezogen aus dem lokalen Rechnernamen abgeleitet. Das ist fuer ein lokales Personal-Tool gedacht und ersetzt keinen Enterprise Secret Store.
