@@ -1,101 +1,137 @@
+# Crimson Glucose Overlay
 
-# Dextop Widget
-## Unofficial Desktop Dexcom Readings Display
+Ein schlankes Windows-Overlay fuer Dexcom Share Werte. Gebaut als persoenliches Always-on-top Widget mit moderner, transparenter PyQt6/QPainter-Oberflaeche statt klassischem Desktop-Formular.
 
-![Github](https://github.com/user-attachments/assets/748f8352-61c6-49ba-9ece-68aa947b9654)
+![Crimson Glucose Overlay](docs/crimson-glucose-overlay-preview.png)
 
-Dextop is a Python-based Windows desktop widget which displays real-time Dexcom glucose readings using the Dexcom Share service API provided by [pydexcom](https://github.com/gagebenne/pydexcom). 
+## Was diese Variante ausmacht
 
-The app is a personal project, which was motivated by a need to keep an eye on my glucose levels while working, without having to constantly check the phone application. The project is still work in progress.
+- Frameless Desktop-Widget mit echter Transparenz
+- Immer im Vordergrund, aber klein genug fuer den Alltag
+- Frei verschiebbar per Linksklick-Drag
+- Rechtsklick-Menue fuer Refresh, Settings und Quit
+- Dexcom Share Live-Daten via `pydexcom`
+- Europa/Outside-US Toggle fuer Dexcom Share Region
+- mmol/L Darstellung mit Grenzwerten
+- Farblogik fuer stabil, langsam steigend/fallend, schnell steigend/fallend und out-of-range
+- Modernes QPainter-Rendering ohne sichtbare Standard-Widgets im Overlay
+- Syne + DM Mono Fonts mit automatischem Download in `%APPDATA%/dextop/fonts`
+- Idle-Fade: nach einer einstellbaren Zeit blendet das Widget auf eine reduzierte Deckkraft ab
+- Settings werden lokal unter `%APPDATA%/dextop/settings.ini` gespeichert
+- Zugangsdaten werden lokal verschluesselt abgelegt
+- Standalone `.exe` Build per PyInstaller
 
-## Features
+## Design
 
-- Always-on-top, unobstructing widget
-- Real-time Dexcom glucose readings
-- Graphical settings interface
-- Position and size customisation and configurability
+Das Overlay ist bewusst als kompaktes Card-UI umgesetzt:
 
-## Prerequisites
+- dunkle, flache Card
+- dezenter farbiger Zustandsglow
+- linke Accent-Bar
+- grosser Glukosewert als Hauptsignal
+- kleine technische Labels in Mono-Schrift
+- Trend-Kreis rechts mit Richtungspfeil und Delta
+
+Farben:
+
+- Gruen: stabil im Zielbereich
+- Gelb: langsamer Trend nach oben/unten im Zielbereich
+- Rot: ausserhalb der Grenzwerte oder schneller Trend
+- Grau: Fehlerzustand oder kein aktueller Wert
+
+## Projektstruktur
+
+```text
+dextop/
+├─ Dextop.py              # App Einstiegspunkt
+├─ app/
+│  ├─ config.py           # Pfade, Farben, Fonts, Groessen
+│  ├─ data.py             # Dexcom Share Polling und mmol/L Umrechnung
+│  ├─ settings.py         # Settings Dialog und verschluesselte Speicherung
+│  └─ widget.py           # QPainter Overlay Rendering und Interaktion
+├─ assets/
+│  └─ icon.ico
+├─ docs/
+│  └─ crimson-glucose-overlay-preview.png
+├─ build.bat              # PyInstaller Build
+└─ requirements.txt
+```
+
+## Voraussetzungen
+
+- Windows 10/11
 - Python 3.12
-- pip 24.1.1
-- Windows operating system
+- Dexcom Account mit aktivierter Share-Funktion
 
-## Installation
+## Lokaler Start
 
-> [!NOTE]
-> At the moment, the project is developed and tested specifically for Windows. Unix system support may be added in the future. 
+```powershell
+cd C:\path\to\dextop
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python Dextop.py
+```
 
-> [!IMPORTANT]
-> If you choose to use the standalone executable installer, please be aware that **the executable files may be auto-detected as false positives** (harmless files seen as a viruses) by some security vendors, [which is a common case when using python-to-exe compilers](https://www.reddit.com/r/learnpython/comments/13igjrl/nuitka_hello_world_binary_detected_as_malware_why/). I am unable to do anything about this matter, the reccomended fix is to add the file to anti-virus exceptions. I assure, that the installer distribution of the application is an exact build of the project as available in the repository. If you have any concerns about the files` integrity or security, it is encouraged to verify it by building the project from the source code yourself.
+Beim ersten Start oeffnet sich der Settings-Dialog. Dort eintragen:
 
-### Running Script Locally
+- Dexcom Benutzername
+- Dexcom Passwort
+- Region: `Outside US / Europe`, wenn dein Account in Europa laeuft
+- Low Threshold, Standard `4.5`
+- High Threshold, Standard `10.0`
+- Idle Timeout
+- Idle Opacity
 
-1. Clone the repository:
-  ```bash
-   git clone https://github.com/pFornagiel/dextop.git
-   cd dextop
-  ```
-2. Run the `venv_setup` batch script from the project`s root folder to create a virtual environment and install dependencies:
+## Build als EXE
 
-  ```bash
-  scripts/venv_setup.bat
-  ```
-3. Activate the virtual environment:
-```bash
-  .venv\Scripts\activate
-  ```
+```powershell
+.\build.bat
+```
 
-4. Run `Dextop.py` file
+Die fertige Datei liegt danach unter:
 
-### Compiling Script Locally
+```text
+dist/Dextop.exe
+```
 
-[Nuitka](https://nuitka.net/) is the package of choice for the project, when it comes to compiling python files to an independent executable. I have provided a batch script to further simplify this process.
+Hinweis: PyInstaller-Onefile-EXEs koennen von einzelnen Security-Produkten als unbekannt oder false positive eingestuft werden. Der Build ist reproduzierbar aus diesem Repository.
 
-1. Clone the repository:
-  ```bash
-   git clone https://github.com/pFornagiel/dextop.git
-   cd dextop
-  ```
-2. Run the `venv_setup` batch script from the project`s root folder to create a virtual environment and install dependencies:
-  ```bash
-  scripts/venv_setup.bat
-  ```
-3. Run the `nuitka_compile` batch script from the project`s root folder to compile the project into an executable file
-  ```bash
-  scripts/nuitka_compile.bat
-  ```
-4. `Dextop.dist` directory will be created, where an executable `Dextop.exe` file can be used to launch the application.
+## Bedienung
 
-### Using the Installer
+- Linksklick halten und ziehen: Position verschieben
+- Rechtsklick: Kontextmenue
+- `Refresh now`: Dexcom Wert sofort neu abrufen
+- `Settings`: Zugangsdaten, Region, Grenzwerte und Fade konfigurieren
+- `Quit`: Overlay beenden
 
-[The Releases tab](https://github.com/pFornagiel/dextop/releases) provides the windows installer download link. The installer itself was created using  [InstallForge](https://installforge.net/) and, as said above, it **installs an exact build of the project as available in the repository**. The installer provides step-by-step instructions and installs the compiled build in user's directory of choice. 
+Die letzte Position wird automatisch gespeichert.
 
-Additionally, at the end of installation, a powershell script which creates a shorcut of `Dextop.exe` at `startup` directory is run. The procedure allows for **running the app at startup**. This behaviour can be disabled by deleting the shortcut from `startup` directory or disabling it using `Task Manager` in `Startup Apps` tab.
+## Daten und Datenschutz
 
-Note, that running the installer may trigger *Windows protected your PC* window. It is a standard windows security measure, which is triggered when unknown executable is run. In order to proceed with the installation, click the `More Info` button and choose `Run anyway` option.
+Die App nutzt Dexcom Share ueber `pydexcom`. Es gibt keinen eigenen Server und keine Cloud-Synchronisierung durch dieses Projekt.
 
-## Widget Usage Instructions
+Lokal gespeicherte Daten:
 
-The [pydexcom's repository](https://github.com/gagebenne/pydexcom) gives detailed instructions about the user-end usage of Dexcom Share API and I highly encourage to read it through. 
+```text
+%APPDATA%/dextop/settings.ini
+%APPDATA%/dextop/fonts/
+```
 
-A quick summary and step-by-step instructions:
-1. Download the [Dexcom G7 / G6 / G5 / G4 / One+ mobile app](https://www.dexcom.com/apps) and [enable the Share service](https://provider.dexcom.com/education-research/cgm-education-use/videos/setting-dexcom-share-and-follow).
+Credentials werden mit `cryptography.fernet` verschluesselt. Der Schluessel wird maschinenbezogen aus dem lokalen Rechnernamen abgeleitet. Das ist fuer ein lokales Personal-Tool gedacht und ersetzt keinen Enterprise Secret Store.
 
-2. In the application, log in using <ins>**your**</ins> Dexcom Account credentials, <ins>not the Dexcom Share follower's or manager's</ins>.
+## Herkunft
 
-3. Make sure to toggle the *Europe* checkbox in the app settings, if you happen to use the application outside of America. Note, that *Password not valid!* error may be caused by this option, if the user happens to be using the app in the wrong region.
+Diese Variante basiert auf dem MIT-lizenzierten Projekt `pFornagiel/dextop`, wurde aber fuer meinen eigenen Workflow weitgehend neu aufgebaut:
 
-To access Dexcom readings, the app needs to be provided an internet connection. After logging in, the widget can be configured using a tray icon associated with it (an icon in the bottom-right corner of the taskbar). By right clicking the icon, a set of options will be shown:
-- `Size`, allows for choosing one of available sizes for the widget.
-- `Draggable`, allows for moving the widget around the screen. When the option is disactivated, the widget is semitransparent, uninteractable and click-trough. After toggling On the option, the widget stops being transparent and can be dragged around using the mouse. Position the widget on the screen while *Draggable* option is On and when you are satisfied, toggle it Off to save its new location.
-- `Reset Position`, resets widget's position to default (bottom-right corner of the screen).
-- `Settings`, opens *Settings* window, where user credentials and other options can be set.
-- `Close`, closes the applicaiton.
+- Wechsel von Tk/Tray-UI zu PyQt6
+- neues QPainter Card-Rendering
+- neues Settings-System
+- neue Build-Pipeline mit PyInstaller
+- moderne Overlay-Optik nach eigener Crimson-Designrichtung
 
-The app makes use of `%appdata%/dextop` directory, which stores the following files:
-- `settings.ini` configuration file
-- logs of encountered errors
+Der Original-Copyright-Hinweis bleibt gemaess MIT-Lizenz erhalten.
 
-## Disclaimer:
+## Disclaimer
 
->*I am utilizing the Dexcom Share API solely for personal use and do not have any affiliation with Dexcom, Inc. This application is not endorsed, sponsored, or managed by Dexcom, and I do not take any responsibility for the accuracy or performance of the data provided through the API. Furthermore, I do not profit from, or claim ownership of, any Dexcom-related content or services. All trademarks, logos, and brand names belong to their respective owners.*
+Dieses Projekt ist ein inoffizielles Personal-Tool und steht in keiner Verbindung zu Dexcom, Inc. Dexcom, Dexcom Share und alle zugehoerigen Marken gehoeren ihren jeweiligen Inhabern. Medizinische Entscheidungen sollten nicht allein auf Grundlage dieses Widgets getroffen werden.
