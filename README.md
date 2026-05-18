@@ -7,9 +7,9 @@ Ein schlankes Windows-Overlay fuer Dexcom Share Werte. Gebaut als persoenliches 
 ## Was diese Variante ausmacht
 
 - Frameless Desktop-Widget mit echter Transparenz
-- Immer im Vordergrund, aber klein genug fuer den Alltag
-- Frei verschiebbar per Linksklick-Drag
-- Rechtsklick-Menue fuer Refresh, Settings und Quit
+- Immer im Vordergrund und standardmaessig klickdurchlaessig
+- Drag and Drop nur bei aktivierter Tray-Option
+- Tray-Menue fuer Drag and Drop, Refresh, Settings und Quit
 - Dexcom Share Live-Daten via `pydexcom`
 - Europa/Outside-US Toggle fuer Dexcom Share Region
 - mmol/L Darstellung mit Grenzwerten
@@ -50,6 +50,7 @@ dextop/
 │  ├─ settings.py         # Settings Dialog und verschluesselte Speicherung
 │  └─ widget.py           # QPainter Overlay Rendering und Interaktion
 ├─ assets/
+│  ├─ dextop_icon.png
 │  └─ icon.ico
 ├─ docs/
 │  └─ crimson-glucose-overlay-preview.png
@@ -99,8 +100,9 @@ Hinweis: PyInstaller-Onefile-EXEs koennen von einzelnen Security-Produkten als u
 
 ## Bedienung
 
-- Linksklick halten und ziehen: Position verschieben
-- Rechtsklick: Kontextmenue
+- Standardmodus: Widget ist klickdurchlaessig und blockiert keine Fenster darunter
+- Tray Icon: Kontextmenue oeffnen
+- `Drag and Drop aktivieren`: Widget wird interaktiv und kann per Linksklick verschoben werden
 - `Refresh now`: Dexcom Wert sofort neu abrufen
 - `Settings`: Zugangsdaten, Region, Grenzwerte und Fade konfigurieren
 - `Quit`: Overlay beenden

@@ -15,18 +15,20 @@ from PyQt6.QtCore import (
     pyqtProperty,
 )
 from PyQt6.QtGui import (
+    QAction,
     QBitmap,
     QBrush,
     QColor,
     QFont,
     QFontDatabase,
     QFontMetrics,
+    QIcon,
     QPainter,
     QPainterPath,
     QPen,
     QRadialGradient,
 )
-from PyQt6.QtWidgets import QApplication, QMenu, QWidget
+from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QWidget
 
 from app.config import (
     BORDER_ALPHA,
@@ -42,6 +44,7 @@ from app.config import (
     RED,
     STATUS_ALPHA,
     SURFACE,
+    TRAY_ICON_PATH,
     UNIT_ALPHA,
     WINDOW_HEIGHT,
     WINDOW_WIDTH,
@@ -51,6 +54,11 @@ from app.data import GlucoseReading
 from app.settings import SettingsDialog
 
 
+GWL_EXSTYLE = -20
+WS_EX_LAYERED = 0x00080000
+WS_EX_TRANSPARENT = 0x00000020
+
+
 class GlucoseWidget(QWidget):
     def __init__(self, settings, service) -> None:
         super().__init__()
@@ -58,8 +66,10 @@ class GlucoseWidget(QWidget):
         self._service = service
         self._reading: GlucoseReading | None = None
         self._drag_offset: QPoint | None = None
+        self._drag_enabled = False
         self._arrow_bounce_offset = 0.0
         self._font_families = self._load_fonts()
+        self._tray = self._create_tray()
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -78,6 +88,7 @@ class GlucoseWidget(QWidget):
 
         self._extend_frame_into_client_area()
         self._apply_card_mask()
+        self._sync_window_interaction()
 
         self._service.reading_changed.connect(self._update_reading)
         self._service.error_changed.connect(self._mark_failed)
@@ -113,6 +124,7 @@ class GlucoseWidget(QWidget):
         super().showEvent(event)
         self._extend_frame_into_client_area()
         self._apply_card_mask()
+        self._sync_window_interaction()
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -134,25 +146,31 @@ class GlucoseWidget(QWidget):
         painter.end()
 
     def mousePressEvent(self, event) -> None:
-        self._fade_in()
-        self.idle_timer.start()
+        if not self._drag_enabled:
+            event.ignore()
+            return
         if event.button() == Qt.MouseButton.LeftButton:
+            self._fade_in()
+            self.idle_timer.start()
             self._drag_offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
-        elif event.button() == Qt.MouseButton.RightButton:
-            self._show_context_menu(event.globalPosition().toPoint())
-            event.accept()
+        else:
+            event.ignore()
 
     def mouseMoveEvent(self, event) -> None:
-        if self._drag_offset is not None and event.buttons() & Qt.MouseButton.LeftButton:
+        if self._drag_enabled and self._drag_offset is not None and event.buttons() & Qt.MouseButton.LeftButton:
             self.move(event.globalPosition().toPoint() - self._drag_offset)
             event.accept()
+        else:
+            event.ignore()
 
     def mouseReleaseEvent(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
+        if self._drag_enabled and event.button() == Qt.MouseButton.LeftButton:
             self._drag_offset = None
             self._settings.save_position(self.x(), self.y())
             event.accept()
+        else:
+            event.ignore()
 
     def _draw_outer_glow(self, painter: QPainter, card: QRectF, active_color: QColor) -> None:
         painter.setPen(Qt.PenStyle.NoPen)
@@ -300,20 +318,6 @@ class GlucoseWidget(QWidget):
             painter.drawLine(QPointF(cx + 4, cy - 6), QPointF(cx + 10, cy))
             painter.drawLine(QPointF(cx + 4, cy + 6), QPointF(cx + 10, cy))
 
-    def _show_context_menu(self, position: QPoint) -> None:
-        menu = QMenu(self)
-        refresh_action = menu.addAction("Refresh now")
-        settings_action = menu.addAction("Settings")
-        menu.addSeparator()
-        quit_action = menu.addAction("Quit")
-        action = menu.exec(position)
-        if action == refresh_action:
-            self._service.refresh_now()
-        elif action == settings_action:
-            self._open_settings()
-        elif action == quit_action:
-            QApplication.quit()
-
     def _open_settings(self) -> None:
         dialog = SettingsDialog(self._settings, self._service, self)
         if dialog.exec() == SettingsDialog.DialogCode.Accepted:
@@ -444,6 +448,69 @@ class GlucoseWidget(QWidget):
         try:
             margins = Margins(-1, -1, -1, -1)
             ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(int(self.winId()), ctypes.byref(margins))
+        except Exception:
+            pass
+
+    def _create_tray(self) -> QSystemTrayIcon:
+        tray = QSystemTrayIcon(self)
+        if TRAY_ICON_PATH.exists():
+            tray.setIcon(QIcon(str(TRAY_ICON_PATH)))
+        tray.setToolTip("Dextop Glucose Widget")
+
+        menu = tray.contextMenu()
+        if menu is None:
+            from PyQt6.QtWidgets import QMenu
+
+            menu = QMenu()
+            tray.setContextMenu(menu)
+
+        self._drag_action = QAction("Drag and Drop aktivieren", self)
+        self._drag_action.setCheckable(True)
+        self._drag_action.toggled.connect(self.set_drag_enabled)
+        refresh_action = QAction("Refresh now", self)
+        refresh_action.triggered.connect(self._service.refresh_now)
+        settings_action = QAction("Settings", self)
+        settings_action.triggered.connect(self._open_settings)
+        quit_action = QAction("Quit", self)
+        quit_action.triggered.connect(QApplication.quit)
+
+        menu.addAction(self._drag_action)
+        menu.addSeparator()
+        menu.addAction(refresh_action)
+        menu.addAction(settings_action)
+        menu.addSeparator()
+        menu.addAction(quit_action)
+
+        tray.activated.connect(self._handle_tray_activated)
+        tray.show()
+        return tray
+
+    def _handle_tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self._open_settings()
+
+    def set_drag_enabled(self, enabled: bool) -> None:
+        self._drag_enabled = enabled
+        self._drag_offset = None
+        if hasattr(self, "_drag_action") and self._drag_action.isChecked() != enabled:
+            self._drag_action.setChecked(enabled)
+        self._sync_window_interaction()
+        if enabled:
+            self._fade_in()
+            self.idle_timer.start()
+
+    def _sync_window_interaction(self) -> None:
+        if not hasattr(ctypes, "windll") or int(self.winId()) == 0:
+            return
+        try:
+            user32 = ctypes.windll.user32
+            hwnd = int(self.winId())
+            exstyle = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+            if self._drag_enabled:
+                exstyle &= ~WS_EX_TRANSPARENT
+            else:
+                exstyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT
+            user32.SetWindowLongW(hwnd, GWL_EXSTYLE, exstyle)
         except Exception:
             pass
 
