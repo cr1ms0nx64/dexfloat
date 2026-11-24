@@ -1,142 +1,54 @@
 # Crimson Glucose Overlay
 
-Ein schlankes Windows-Overlay fuer Dexcom Share Werte. Gebaut als persoenliches Always-on-top Widget mit moderner, transparenter PyQt6/QPainter-Oberflaeche statt klassischem Desktop-Formular.
+Ein kompaktes Windows-Widget für Dexcom-Share-Werte: transparent, immer im Vordergrund und standardmäßig klickdurchlässig.
 
-![Crimson Glucose Overlay](docs/crimson-glucose-overlay-preview.png)
+> [!NOTE]
+> **Basiert auf [dextop von Paweł Fornagiel](https://github.com/pFornagiel/dextop).**  
+> Diese Variante entwickelt das Original mit einer neuen PyQt6-Oberfläche und eigenem Crimson-Design weiter. Der ursprüngliche Copyright-Hinweis und die [MIT-Lizenz](LICENSE) bleiben erhalten.
 
-## Was diese Variante ausmacht
+![Crimson Glucose Overlay – Vorschau](docs/crimson-glucose-overlay-preview.png)
 
-- Frameless Desktop-Widget mit echter Transparenz
-- Immer im Vordergrund und standardmaessig klickdurchlaessig
-- Drag and Drop nur bei aktivierter Tray-Option
-- Tray-Menue fuer Drag and Drop, Refresh, Settings und Quit
-- Dexcom Share Live-Daten via `pydexcom`
-- Europa/Outside-US Toggle fuer Dexcom Share Region
-- mmol/L Darstellung mit Grenzwerten
-- Farblogik fuer stabil, langsam steigend/fallend, schnell steigend/fallend und out-of-range
-- Modernes QPainter-Rendering ohne sichtbare Standard-Widgets im Overlay
-- Syne + DM Mono Fonts mit automatischem Download in `%APPDATA%/dextop/fonts`
-- Idle-Fade: nach einer einstellbaren Zeit blendet das Widget auf eine reduzierte Deckkraft ab
-- Settings werden lokal unter `%APPDATA%/dextop/settings.ini` gespeichert
-- Zugangsdaten werden lokal verschluesselt abgelegt
-- Standalone `.exe` Build per PyInstaller
+## Änderungen gegenüber dem Original
 
-## Design
+| Bereich | Diese Variante |
+| --- | --- |
+| Oberfläche | PyQt6 und QPainter statt Tk; rahmenloses Overlay mit eigener Glukose-, Trend- und Delta-Anzeige |
+| Darstellung | Farbige Zustände, einstellbare Grenzwerte und automatisches Abblenden bei Inaktivität |
+| Einstellungen | Überarbeiteter Dialog für Zugang, Region, Grenzwerte und Deckkraft; gespeicherte Fensterposition |
+| Bedienung & Build | Tray-Menü für Verschieben, Aktualisieren und Autostart; eigenständige EXE mit PyInstaller |
 
-Das Overlay ist bewusst als kompaktes Card-UI umgesetzt:
+Die Dexcom-Share-Anbindung erfolgt weiterhin über [pydexcom](https://github.com/gagebenne/pydexcom). Angezeigt werden mmol/L-Werte; die Share-Region ist zwischen USA und außerhalb der USA umschaltbar.
 
-- dunkle, flache Card
-- dezenter farbiger Zustandsglow
-- linke Accent-Bar
-- grosser Glukosewert als Hauptsignal
-- kleine technische Labels in Mono-Schrift
-- Trend-Kreis rechts mit Richtungspfeil und Delta
+## Starten
 
-Farben:
-
-- Gruen: stabil im Zielbereich
-- Gelb: langsamer Trend nach oben/unten im Zielbereich
-- Rot: ausserhalb der Grenzwerte oder schneller Trend
-- Grau: Fehlerzustand oder kein aktueller Wert
-
-## Projektstruktur
-
-```text
-dextop/
-├─ Dextop.py              # App Einstiegspunkt
-├─ app/
-│  ├─ config.py           # Pfade, Farben, Fonts, Groessen
-│  ├─ autostart.py        # Windows Autostart per Benutzer-Run-Key
-│  ├─ data.py             # Dexcom Share Polling und mmol/L Umrechnung
-│  ├─ settings.py         # Settings Dialog und verschluesselte Speicherung
-│  └─ widget.py           # QPainter Overlay Rendering und Interaktion
-├─ assets/
-│  ├─ dextop_icon.png
-│  └─ icon.ico
-├─ docs/
-│  └─ crimson-glucose-overlay-preview.png
-├─ build.bat              # PyInstaller Build
-└─ requirements.txt
-```
-
-## Voraussetzungen
-
-- Windows 10/11
-- Python 3.12
-- Dexcom Account mit aktivierter Share-Funktion
-
-## Lokaler Start
+**Voraussetzungen:** Windows 10/11, Python 3.12 und ein Dexcom-Konto mit aktivierter Share-Funktion.
 
 ```powershell
-cd C:\path\to\dextop
+git clone https://github.com/argonaut-0/dextop.git
+cd dextop
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python Dextop.py
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe Dextop.py
 ```
 
-Beim ersten Start oeffnet sich der Settings-Dialog. Dort eintragen:
+Beim ersten Start die eigenen Dexcom-Zugangsdaten und die passende Region eintragen. Für europäische Konten **Outside US / Europe** wählen.
 
-- Dexcom Benutzername
-- Dexcom Passwort
-- Region: `Outside US / Europe`, wenn dein Account in Europa laeuft
-- Low Threshold, Standard `4.5`
-- High Threshold, Standard `10.0`
-- Idle Timeout
-- Idle Opacity
+**Bedienung:** Rechtsklick auf das Tray-Symbol öffnet das Menü. Zum Verschieben **Drag and Drop aktivieren** einschalten und anschließend wieder ausschalten, damit das Widget klickdurchlässig bleibt. Einstellungen, sofortige Aktualisierung und Autostart sind ebenfalls dort erreichbar.
 
-## Build als EXE
+## EXE erstellen
+
+Nach der Einrichtung im Projektverzeichnis ausführen:
 
 ```powershell
 .\build.bat
 ```
 
-Die fertige Datei liegt danach unter:
+Ergebnis: `dist\Dextop.exe`.
 
-```text
-dist/Dextop.exe
-```
+## Lokale Daten
 
-Hinweis: PyInstaller-Onefile-EXEs koennen von einzelnen Security-Produkten als unbekannt oder false positive eingestuft werden. Der Build ist reproduzierbar aus diesem Repository.
+Einstellungen und Fensterposition liegen unter `%APPDATA%\dextop\settings.ini`. Der Benutzername wird im Klartext gespeichert, das Passwort mit Fernet verschlüsselt. Der Schlüssel wird aus dem Rechnernamen abgeleitet; dies ist kein Windows-Anmeldedatenspeicher. Schriftarten werden beim ersten Bedarf nach `%APPDATA%\dextop\fonts` geladen. Das Projekt betreibt keinen eigenen Datenserver.
 
-## Bedienung
+---
 
-- Standardmodus: Widget ist klickdurchlaessig und blockiert keine Fenster darunter
-- Tray Icon: Kontextmenue oeffnen
-- `Drag and Drop aktivieren`: Widget wird interaktiv und kann per Linksklick verschoben werden
-- `Autostart aktivieren`: startet das Overlay automatisch beim Windows Login
-- `Refresh now`: Dexcom Wert sofort neu abrufen
-- `Settings`: Zugangsdaten, Region, Grenzwerte und Fade konfigurieren
-- `Quit`: Overlay beenden
-
-Die letzte Position wird automatisch gespeichert.
-
-## Daten und Datenschutz
-
-Die App nutzt Dexcom Share ueber `pydexcom`. Es gibt keinen eigenen Server und keine Cloud-Synchronisierung durch dieses Projekt.
-
-Lokal gespeicherte Daten:
-
-```text
-%APPDATA%/dextop/settings.ini
-%APPDATA%/dextop/fonts/
-HKCU\Software\Microsoft\Windows\CurrentVersion\Run\CrimsonGlucoseOverlay
-```
-
-Credentials werden mit `cryptography.fernet` verschluesselt. Der Schluessel wird maschinenbezogen aus dem lokalen Rechnernamen abgeleitet. Das ist fuer ein lokales Personal-Tool gedacht und ersetzt keinen Enterprise Secret Store.
-
-## Herkunft
-
-Diese Variante basiert auf dem MIT-lizenzierten Projekt `pFornagiel/dextop`, wurde aber fuer meinen eigenen Workflow weitgehend neu aufgebaut:
-
-- Wechsel von Tk/Tray-UI zu PyQt6
-- neues QPainter Card-Rendering
-- neues Settings-System
-- neue Build-Pipeline mit PyInstaller
-- moderne Overlay-Optik nach eigener Crimson-Designrichtung
-
-Der Original-Copyright-Hinweis bleibt gemaess MIT-Lizenz erhalten.
-
-## Disclaimer
-
-Dieses Projekt ist ein inoffizielles Personal-Tool und steht in keiner Verbindung zu Dexcom, Inc. Dexcom, Dexcom Share und alle zugehoerigen Marken gehoeren ihren jeweiligen Inhabern. Medizinische Entscheidungen sollten nicht allein auf Grundlage dieses Widgets getroffen werden.
+**Inoffizielles Projekt ohne Verbindung zu Dexcom, Inc.** Das Widget ersetzt keine medizinische Überwachung und ist keine alleinige Grundlage für Therapieentscheidungen.
