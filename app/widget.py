@@ -456,7 +456,7 @@ class GlucoseWidget(QWidget):
         tray = QSystemTrayIcon(self)
         if TRAY_ICON_PATH.exists():
             tray.setIcon(QIcon(str(TRAY_ICON_PATH)))
-        tray.setToolTip("Dextop Glucose Widget")
+        tray.setToolTip("Dexfloat · Dexcom Glucose Overlay")
 
         menu = tray.contextMenu()
         if menu is None:

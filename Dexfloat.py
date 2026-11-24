@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtWidgets import QMessageBox
 
 from app.config import TRAY_ICON_PATH
+from app.autostart import migrate_legacy_autostart
 from app.data import DexcomService
 from app.settings import SettingsDialog, SettingsStore
 from app.widget import GlucoseWidget
@@ -12,7 +13,9 @@ from app.widget import GlucoseWidget
 
 def main() -> int:
     app = QApplication(sys.argv)
+    app.setApplicationName("Dexfloat")
     app.setQuitOnLastWindowClosed(False)
+    migrate_legacy_autostart()
     if TRAY_ICON_PATH.exists():
         app.setWindowIcon(QIcon(str(TRAY_ICON_PATH)))
 

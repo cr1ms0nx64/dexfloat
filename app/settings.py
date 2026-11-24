@@ -20,12 +20,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from app.config import APPDATA_DIR, DEFAULT_HIGH, DEFAULT_LOW, SETTINGS_PATH
+from app.config import APPDATA_DIR, DEFAULT_HIGH, DEFAULT_LOW, LEGACY_SETTINGS_PATH, SETTINGS_PATH
 
 
-def _fernet() -> Fernet:
-    seed = platform.node().encode("utf-8", errors="ignore") or b"dextop"
-    digest = hashlib.sha256(seed + b":dextop").digest()
+def _fernet(context: bytes = b"dexfloat") -> Fernet:
+    seed = platform.node().encode("utf-8", errors="ignore") or context
+    digest = hashlib.sha256(seed + b":" + context).digest()
     return Fernet(base64.urlsafe_b64encode(digest))
 
 
@@ -44,7 +44,8 @@ class SettingsStore:
     def __post_init__(self) -> None:
         APPDATA_DIR.mkdir(parents=True, exist_ok=True)
         self._config = configparser.ConfigParser()
-        self._config.read(SETTINGS_PATH, encoding="utf-8")
+        source = SETTINGS_PATH if SETTINGS_PATH.exists() else LEGACY_SETTINGS_PATH
+        self._config.read(source, encoding="utf-8")
         self.load()
 
     def has_credentials(self) -> bool:
@@ -95,10 +96,13 @@ class SettingsStore:
     def _decrypt(self, value: str) -> str:
         if not value:
             return ""
-        try:
-            return _fernet().decrypt(value.encode("ascii")).decode("utf-8")
-        except (InvalidToken, ValueError):
-            return ""
+        # Read existing installations; new saves use the Dexfloat context.
+        for context in (b"dexfloat", b"dextop"):
+            try:
+                return _fernet(context).decrypt(value.encode("ascii")).decode("utf-8")
+            except (InvalidToken, ValueError, UnicodeError):
+                continue
+        return ""
 
 
 class SettingsDialog(QDialog):
@@ -107,7 +111,7 @@ class SettingsDialog(QDialog):
         self._settings = settings
         self._service = service
         self._last_error = ""
-        self.setWindowTitle("Dextop Settings")
+        self.setWindowTitle("Dexfloat Settings")
         self.setModal(True)
         self.setMinimumWidth(360)
 

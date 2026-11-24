@@ -6,14 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-APP_NAME = "dextop"
+APP_NAME = "dexfloat"
 APPDATA_DIR = Path(os.getenv("APPDATA", str(Path.home()))) / APP_NAME
 SETTINGS_PATH = APPDATA_DIR / "settings.ini"
+LEGACY_SETTINGS_PATH = APPDATA_DIR.parent / "dextop" / "settings.ini"
 FONTS_DIR = APPDATA_DIR / "fonts"
 
 APP_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 ASSETS_DIR = APP_ROOT / "assets"
-TRAY_ICON_PATH = ASSETS_DIR / "dextop_icon.png"
+TRAY_ICON_PATH = ASSETS_DIR / "dexfloat_icon.png"
 
 WINDOW_WIDTH = 400
 WINDOW_HEIGHT = 120

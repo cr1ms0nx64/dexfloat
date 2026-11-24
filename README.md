@@ -1,12 +1,12 @@
-#  Glucose Overlay
+# Dexfloat
 
 Ein kompaktes Windows-Widget für Dexcom-Share-Werte: transparent, immer im Vordergrund und standardmäßig klickdurchlässig.
 
 > [!NOTE]
 > **Basiert auf [dextop von Paweł Fornagiel](https://github.com/pFornagiel/dextop).**  
-> Diese Variante entwickelt das Original mit einer neuen PyQt6-Oberfläche und eigenem Crimson-Design weiter. Der ursprüngliche Copyright-Hinweis und die [MIT-Lizenz](LICENSE) bleiben erhalten.
+> Diese Variante entwickelt das Original mit einer neuen PyQt6-Oberfläche und eigenem Overlay-Design weiter. Der ursprüngliche Copyright-Hinweis und die [MIT-Lizenz](LICENSE) bleiben erhalten.
 
-![Crimson Glucose Overlay – Vorschau](docs/crimson-glucose-overlay-preview.png)
+![Dexfloat – Vorschau](docs/dexfloat-preview.png)
 
 ## Änderungen gegenüber dem Original
 
@@ -24,11 +24,11 @@ Die Dexcom-Share-Anbindung erfolgt weiterhin über [pydexcom](https://github.com
 **Voraussetzungen:** Windows 10/11, Python 3.12 und ein Dexcom-Konto mit aktivierter Share-Funktion.
 
 ```powershell
-git clone https://github.com/argonaut-0/dextop.git
-cd dextop
+git clone https://github.com/argonaut-0/dexfloat.git
+cd dexfloat
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe Dextop.py
+.\.venv\Scripts\python.exe Dexfloat.py
 ```
 
 Beim ersten Start die eigenen Dexcom-Zugangsdaten und die passende Region eintragen. Für europäische Konten **Outside US / Europe** wählen.
@@ -43,11 +43,15 @@ Nach der Einrichtung im Projektverzeichnis ausführen:
 .\build.bat
 ```
 
-Ergebnis: `dist\Dextop.exe`.
+Ergebnis: `dist\Dexfloat.exe`.
+
+Tests: `.\.venv\Scripts\python.exe -m unittest discover -s tests`.
 
 ## Lokale Daten
 
-Einstellungen und Fensterposition liegen unter `%APPDATA%\dextop\settings.ini`. Der Benutzername wird im Klartext gespeichert, das Passwort mit Fernet verschlüsselt. Der Schlüssel wird aus dem Rechnernamen abgeleitet; dies ist kein Windows-Anmeldedatenspeicher. Schriftarten werden beim ersten Bedarf nach `%APPDATA%\dextop\fonts` geladen. Das Projekt betreibt keinen eigenen Datenserver.
+Einstellungen und Fensterposition liegen unter `%APPDATA%\dexfloat\settings.ini`. Der Benutzername wird im Klartext gespeichert, das Passwort mit Fernet verschlüsselt. Der Schlüssel wird aus dem Rechnernamen abgeleitet; dies ist kein Windows-Anmeldedatenspeicher. Schriftarten werden beim ersten Bedarf nach `%APPDATA%\dexfloat\fonts` geladen. Das Projekt betreibt keinen eigenen Datenserver.
+
+Vorhandene Einstellungen aus `%APPDATA%\dextop` werden beim ersten Start als Ausgangspunkt gelesen; gespeichert wird anschließend unter `dexfloat`. Ein bestehender Autostart-Eintrag dieser Variante wird auf Dexfloat umgestellt.
 
 ---
 

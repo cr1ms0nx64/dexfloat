@@ -12,6 +12,6 @@ if not exist "%PYTHON_EXE%" (
   --add-data "assets;assets" ^
   --hidden-import pydexcom ^
   --hidden-import cryptography ^
-  --name Dextop Dextop.py
+  --name Dexfloat Dexfloat.py
 
 pause
