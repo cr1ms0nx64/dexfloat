@@ -1,4 +1,4 @@
-# Crimson Glucose Overlay
+#  Glucose Overlay
 
 Ein kompaktes Windows-Widget für Dexcom-Share-Werte: transparent, immer im Vordergrund und standardmäßig klickdurchlässig.
 
