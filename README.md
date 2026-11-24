@@ -6,7 +6,7 @@ Ein kompaktes Windows-Widget für Dexcom-Share-Werte: transparent, immer im Vord
 > **Basiert auf [dextop von Paweł Fornagiel](https://github.com/pFornagiel/dextop).**  
 > Diese Variante entwickelt das Original mit einer neuen PyQt6-Oberfläche und eigenem Overlay-Design weiter. Der ursprüngliche Copyright-Hinweis und die [MIT-Lizenz](LICENSE) bleiben erhalten.
 
-![Dexfloat – Vorschau](docs/dexfloat-preview.png)
+![Dexfloat – Darstellungsentwürfe für stabile, steigende und fallende Glukosewerte](docs/glucose-monitor.png)
 
 ## Änderungen gegenüber dem Original
 
@@ -24,7 +24,7 @@ Die Dexcom-Share-Anbindung erfolgt weiterhin über [pydexcom](https://github.com
 **Voraussetzungen:** Windows 10/11, Python 3.12 und ein Dexcom-Konto mit aktivierter Share-Funktion.
 
 ```powershell
-git clone https://github.com/argonaut-0/dexfloat.git
+git clone https://github.com/cr1ms0nx64/dexfloat.git
 cd dexfloat
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
