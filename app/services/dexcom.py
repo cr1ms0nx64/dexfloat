@@ -51,9 +51,11 @@ class DexcomService(QObject):
         self._last_reading: GlucoseReading | None = None
         self._generation = 0
         self._token = 0
+        self._validation_credentials = {}
         self._busy = False
         self._running = False
         self._auth_blocked = False
+        self._rejected_credentials = set()
         self._credentials = self.credentials_from_settings()
         self._adopted_client = None
         self._thread = QThread(self)
@@ -133,14 +135,24 @@ class DexcomService(QObject):
         else:
             self.error_changed.emit(None, "")
         self._auth_blocked = result.error is ErrorKind.AUTH
+        if self._auth_blocked:
+            self._rejected_credentials.add(self._credentials)
         if not self._auth_blocked:
             self._timer.start(result.retry_seconds * 1000)
 
     def validate(self, credentials):
         self._token += 1
-        self._validation_requested.emit(self._token, credentials)
+        self._validation_credentials[self._token] = credentials
+        if credentials in self._rejected_credentials:
+            token = self._token
+            QTimer.singleShot(0, lambda: self.validation_finished.emit(token, None, ErrorKind.AUTH))
+        else:
+            self._validation_requested.emit(self._token, credentials)
         return self._token
 
     @pyqtSlot(int, object, object)
     def _validated(self, token, client, error):
+        credentials = self._validation_credentials.pop(token, None)
+        if error is ErrorKind.AUTH and credentials is not None:
+            self._rejected_credentials.add(credentials)
         self.validation_finished.emit(token, client, error)
