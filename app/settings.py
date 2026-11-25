@@ -36,6 +36,7 @@ class SettingsStore:
     region_ous: bool = True
     low_threshold: float = DEFAULT_LOW
     high_threshold: float = DEFAULT_HIGH
+    urgent_low_threshold: float = 3.1
     idle_timeout_seconds: int = 5
     idle_opacity_percent: int = 25
     x: int | None = None
@@ -61,6 +62,7 @@ class SettingsStore:
         self.region_ous = settings.get("region", "ous") == "ous"
         self.low_threshold = float(settings.get("low_threshold", DEFAULT_LOW))
         self.high_threshold = float(settings.get("high_threshold", DEFAULT_HIGH))
+        self.urgent_low_threshold = float(settings.get("urgent_low_threshold", 3.1))
         self.idle_timeout_seconds = int(settings.get("idle_timeout_seconds", 5))
         self.idle_opacity_percent = int(settings.get("idle_opacity_percent", 25))
         self.x = int(position["x"]) if position.get("x", "").strip() else None
@@ -75,6 +77,7 @@ class SettingsStore:
             "region": "ous" if self.region_ous else "us",
             "low_threshold": str(self.low_threshold),
             "high_threshold": str(self.high_threshold),
+            "urgent_low_threshold": str(self.urgent_low_threshold),
             "idle_timeout_seconds": str(self.idle_timeout_seconds),
             "idle_opacity_percent": str(self.idle_opacity_percent),
         }
@@ -134,6 +137,11 @@ class SettingsDialog(QDialog):
         self._high.setDecimals(1)
         self._high.setSingleStep(0.1)
         self._high.setValue(settings.high_threshold)
+        self._urgent_low = QDoubleSpinBox()
+        self._urgent_low.setRange(1.0, 30.0)
+        self._urgent_low.setDecimals(1)
+        self._urgent_low.setSingleStep(0.1)
+        self._urgent_low.setValue(settings.urgent_low_threshold)
         self._idle_timeout = QDoubleSpinBox()
         self._idle_timeout.setRange(2, 60)
         self._idle_timeout.setDecimals(0)
@@ -150,6 +158,7 @@ class SettingsDialog(QDialog):
         form.addRow("Region", self._region)
         form.addRow("Low threshold", self._low)
         form.addRow("High threshold", self._high)
+        form.addRow("Dringend niedrig (mmol/L)", self._urgent_low)
         form.addRow("Idle timeout (seconds)", self._idle_timeout)
         form.addRow("Idle opacity (%)", self._idle_opacity)
 
@@ -180,6 +189,7 @@ class SettingsDialog(QDialog):
         self._settings.region_ous = self._region.isChecked()
         self._settings.low_threshold = self._low.value()
         self._settings.high_threshold = self._high.value()
+        self._settings.urgent_low_threshold = self._urgent_low.value()
         self._settings.idle_timeout_seconds = int(self._idle_timeout.value())
         self._settings.idle_opacity_percent = int(self._idle_opacity.value())
         self._last_error = ""
@@ -196,3 +206,4 @@ class SettingsDialog(QDialog):
 
     def _capture_error(self, message: str) -> None:
         self._last_error = message
+
