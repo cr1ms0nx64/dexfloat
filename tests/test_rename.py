@@ -6,12 +6,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app import autostart, settings
+from app.services import credentials
 
 
 class SettingsRenameTests(unittest.TestCase):
     def setUp(self):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
+        self.stack.enter_context(patch.object(credentials, "is_windows", return_value=False))
         root = Path(self.stack.enter_context(tempfile.TemporaryDirectory()))
         self.current = root / "dexfloat" / "settings.ini"
         self.legacy = root / "dextop" / "settings.ini"
@@ -124,3 +126,4 @@ class AutostartRenameTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

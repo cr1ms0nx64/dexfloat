@@ -1,5 +1,4 @@
-﻿PyQt6
-pydexcom
-cryptography
-requests
-pyinstaller
+PyQt6==6.10.0
+pydexcom==0.5.1
+cryptography==46.0.3
+requests==2.32.5
