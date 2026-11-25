@@ -1,23 +1,28 @@
 from __future__ import annotations
 
+from app.ui.strings import TEXT
+
 import sys
 from pathlib import Path
+from importlib import import_module
+from types import ModuleType
 
+winreg: ModuleType | None
 try:
-    import winreg
+    winreg = import_module("winreg")
 except ImportError:  # pragma: no cover - Windows-only feature.
     winreg = None
 
 
 RUN_KEY_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
-RUN_VALUE_NAME = "Dexfloat"
+RUN_VALUE_NAME = TEXT["app_title"]
 LEGACY_RUN_VALUE_NAME = "CrimsonGlucoseOverlay"
 
 
 def current_launch_command() -> str:
     """Return the command Windows should execute on user login."""
     if getattr(sys, "frozen", False):
-        return _quote(Path(sys.executable))
+        return _quote(sys.executable)
 
     script_path = Path(__file__).resolve().parents[2] / "Dexfloat.py"
     launcher = Path(sys.executable)
@@ -44,7 +49,7 @@ def is_autostart_enabled() -> bool:
 
 def set_autostart_enabled(enabled: bool) -> None:
     if winreg is None:
-        raise RuntimeError("Autostart wird nur unter Windows unterstützt.")
+        raise RuntimeError(TEXT["autostart_unsupported"])
 
     if enabled:
         with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, RUN_KEY_PATH, 0, winreg.KEY_SET_VALUE) as key:
@@ -71,7 +76,7 @@ def migrate_legacy_autostart() -> None:
         pass
 
 
-def _quote(path: Path) -> str:
+def _quote(path: Path | str) -> str:
     text = str(path)
     escaped = text.replace('"', r"\"")
     return f'"{escaped}"'

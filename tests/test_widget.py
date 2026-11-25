@@ -70,3 +70,8 @@ class WidgetTests(unittest.TestCase):
         for delta, expected in [(None, "–"), (0, "± 0.0"), (0.3, "+0.3"), (-0.3, "−0.3")]:
             self.widget._update_reading(self.reading(delta=delta))
             self.assertEqual(self.widget._delta_text(), expected)
+
+    def test_bundled_fonts_load_without_download(self):
+        self.assertEqual(self.widget._font_families["display"], "Syne")
+        self.assertEqual(self.widget._font_families["mono_regular"], "DM Mono")
+        self.assertEqual(self.widget._font_families["mono_light"], "DM Mono")

@@ -12,21 +12,24 @@ class _Worker(QObject):
 
     def __init__(self):
         super().__init__()
-        self._poller = None
+        self._poller: Poller | None = None
         self._generation = -1
 
     @pyqtSlot(int, object, object)
     def poll(self, generation, credentials, client):
-        if QThread.currentThread().isInterruptionRequested():
+        thread = QThread.currentThread()
+        if thread is not None and thread.isInterruptionRequested():
             return
         if generation != self._generation:
-            self._poller = Poller(credentials, client=client)
+            self._poller = Poller(credentials, client=client, factory=create_client)
             self._generation = generation
+        assert self._poller is not None
         self.completed.emit(generation, self._poller.poll())
 
     @pyqtSlot(int, object)
     def validate(self, token, credentials):
-        if QThread.currentThread().isInterruptionRequested():
+        thread = QThread.currentThread()
+        if thread is not None and thread.isInterruptionRequested():
             return
         from app.services.polling import classify_error
         try:
@@ -51,11 +54,11 @@ class DexcomService(QObject):
         self._last_reading: GlucoseReading | None = None
         self._generation = 0
         self._token = 0
-        self._validation_credentials = {}
+        self._validation_credentials: dict[int, Credentials] = {}
         self._busy = False
         self._running = False
         self._auth_blocked = False
-        self._rejected_credentials = set()
+        self._rejected_credentials: set[Credentials] = set()
         self._credentials = self.credentials_from_settings()
         self._adopted_client = None
         self._thread = QThread(self)
@@ -100,6 +103,12 @@ class DexcomService(QObject):
         self.adopt(self.credentials_from_settings(), None)
 
     def adopt(self, credentials, client):
+        if credentials in self._rejected_credentials:
+            from app.ui.strings import ERROR_MESSAGES
+            self._auth_blocked = True
+            self._timer.stop()
+            self.error_changed.emit(ErrorKind.AUTH, ERROR_MESSAGES[ErrorKind.AUTH])
+            return
         self._generation += 1
         self._credentials = credentials
         self._adopted_client = client
@@ -145,7 +154,7 @@ class DexcomService(QObject):
         self._validation_credentials[self._token] = credentials
         if credentials in self._rejected_credentials:
             token = self._token
-            QTimer.singleShot(0, lambda: self.validation_finished.emit(token, None, ErrorKind.AUTH))
+            QTimer.singleShot(0, lambda: self._validated(token, None, ErrorKind.AUTH))
         else:
             self._validation_requested.emit(self._token, credentials)
         return self._token

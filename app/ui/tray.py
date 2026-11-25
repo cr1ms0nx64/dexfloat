@@ -1,3 +1,5 @@
+from app.ui.strings import TEXT
+
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
@@ -12,22 +14,22 @@ class TrayController:
         self.icon = QSystemTrayIcon(widget)
         if TRAY_ICON_PATH.exists():
             self.icon.setIcon(QIcon(str(TRAY_ICON_PATH)))
-        self.icon.setToolTip("Dexfloat · Dexcom-Glukoseanzeige")
+        self.icon.setToolTip(TEXT["tray_title"])
         self.menu = QMenu(widget)
         self.icon.setContextMenu(self.menu)
-        self.drag = QAction("Verschieben aktivieren", widget)
+        self.drag = QAction(TEXT["drag"], widget)
         self.drag.setCheckable(True)
         self.drag.toggled.connect(widget.set_drag_enabled)
-        self.autostart = QAction("Autostart aktivieren", widget)
+        self.autostart = QAction(TEXT["autostart"], widget)
         self.autostart.setCheckable(True)
         self.autostart.setChecked(is_autostart_enabled())
         self.autostart.toggled.connect(self._set_autostart)
         self.menu.addAction(self.drag)
         self.menu.addAction(self.autostart)
         self.menu.addSeparator()
-        for label, callback in [("Jetzt aktualisieren", service.refresh_now),
-                                ("Einstellungen", widget._open_settings),
-                                ("Beenden", QApplication.quit)]:
+        for label, callback in [(TEXT["refresh"], service.refresh_now),
+                                (TEXT["settings"], widget._open_settings),
+                                (TEXT["quit"], QApplication.quit)]:
             action = QAction(label, widget)
             action.triggered.connect(callback)
             self.menu.addAction(action)
@@ -46,11 +48,11 @@ class TrayController:
             self.autostart.blockSignals(True)
             self.autostart.setChecked(is_autostart_enabled())
             self.autostart.blockSignals(False)
-            self.icon.showMessage("Autostart konnte nicht geändert werden", str(exc),
+            self.icon.showMessage(TEXT["autostart_error"], str(exc),
                                   QSystemTrayIcon.MessageIcon.Warning, 5000)
 
     def _error(self, kind, message):
-        self.icon.setToolTip("Dexfloat" + (" · " + message if message else " · Dexcom-Glukoseanzeige"))
+        self.icon.setToolTip(TEXT["app_title"] + " · " + message if message else TEXT["tray_title"])
         if kind is ErrorKind.AUTH:
-            self.icon.showMessage("Dexcom-Anmeldung erforderlich", message,
+            self.icon.showMessage(TEXT["login_required"], message,
                                   QSystemTrayIcon.MessageIcon.Warning, 10000)

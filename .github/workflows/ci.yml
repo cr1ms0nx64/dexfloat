@@ -1,0 +1,72 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+jobs:
+  phase-tests:
+    name: Tests nach Phase ${{ matrix.phase }}
+    runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - phase: 1
+            ref: a0bc5498face5bfb9083b3c3fbdc43a5f8928733
+          - phase: 2
+            ref: ed64e3cabd0befabe16496053ebb87562aad7205
+          - phase: 3
+            ref: 1a4048fe593ef9be7a5cb14afb839e4210732a87
+          - phase: 4
+            ref: a72f5d9dea512ea46e45718e435ffcc247ff99d0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Qt-Systembibliotheken installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libopengl0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Prüfabhängigkeiten aus dem aktuellen Stand installieren
+        run: python -m pip install -r requirements-dev.txt
+      - name: Phasenstand auschecken
+        run: git checkout ${{ matrix.ref }}
+      - name: Tests ohne Netzwerk und Registry
+        run: python -m unittest discover -s tests
+  checks:
+    runs-on: windows-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Abhängigkeiten installieren
+        run: python -m pip install -r requirements-dev.txt
+      - name: API-Version und Signatur prüfen
+        run: python tools/inspect_pydexcom.py
+      - name: Ruff
+        run: python -m ruff check .
+      - name: Mypy
+        run: python -m mypy app
+      - name: Tests ohne Netzwerk und Registry
+        if: ${{ !cancelled() }}
+        run: python -m unittest discover -s tests
+      - name: EXE erstellen
+        if: ${{ !cancelled() }}
+        run: python -m PyInstaller --noconfirm --clean Dexfloat.spec
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Dexfloat-Windows
+          path: dist/Dexfloat.exe

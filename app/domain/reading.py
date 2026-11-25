@@ -47,6 +47,8 @@ class GlucoseReading:
     delta_mmol: float | None = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.trend, Trend):
+            raise ValueError("Invalid trend")
         if self.timestamp.tzinfo is None or self.timestamp.utcoffset() is None:
             raise ValueError("Sensor timestamp must be timezone-aware")
         if not math.isfinite(self.value_mmol) or self.value_mmol <= 0:

@@ -1,0 +1,24 @@
+[project]
+name = "dexfloat"
+version = "0.2.0"
+description = "Windows overlay for Dexcom Share readings"
+requires-python = ">=3.12"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/test_widget.py" = ["E402"]
+"tests/test_settings_dialog.py" = ["E402"]
+"tests/test_worker.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+platform = "win32"
+ignore_missing_imports = true
+warn_unused_ignores = true
+check_untyped_defs = true

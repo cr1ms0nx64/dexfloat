@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.ui.strings import TEXT
+
 from datetime import datetime, timezone
 from PyQt6.QtCore import (
     QEasingCurve,
@@ -9,8 +11,8 @@ from PyQt6.QtCore import (
     QRectF,
     Qt,
     QTimer,
-    pyqtProperty,
 )
+from PyQt6.QtCore import pyqtProperty  # type: ignore[attr-defined]
 from PyQt6.QtGui import (
     QBitmap,
     QBrush,
@@ -42,6 +44,7 @@ from app.config import (
 )
 from app.domain.reading import GlucoseReading, Trend
 from app.domain.state import DisplayState, classify
+from app.services.polling import ErrorKind
 from app.platform.win32 import extend_frame, set_click_through
 from app.ui.settings_dialog import SettingsDialog
 from app.ui.theme import ARROWS, CRITICAL, NEUTRAL, STYLES
@@ -58,11 +61,12 @@ class GlucoseWidget(QWidget):
         self._drag_enabled = False
         self._arrow_bounce_offset = 0.0
         self._font_families = self._load_fonts()
-        self._fonts = {}
-        self._metrics = {}
+        self._fonts: dict[tuple[str, int, bool], QFont] = {}
+        self._metrics: dict[tuple[str, int, bool], QFontMetrics] = {}
         self._state = DisplayState.NO_DATA
-        self._error_message = "Verbinde …"
-        self._settings_dialog = None
+        self._error_message = TEXT["connecting"]
+        self._connecting = True
+        self._settings_dialog: SettingsDialog | None = None
         self._tray = TrayController(self, service)
 
         self.setWindowFlags(
@@ -108,17 +112,19 @@ class GlucoseWidget(QWidget):
         self._age_timer.setInterval(1000)
         self._age_timer.timeout.connect(self._refresh_state)
         self._age_timer.start()
-        QGuiApplication.instance().screenRemoved.connect(self._screen_removed)
+        application = QGuiApplication.instance()
+        if isinstance(application, QGuiApplication):
+            application.screenRemoved.connect(self._screen_removed)
         self._ensure_visible()
 
-    @pyqtProperty(float)
-    def arrowBounceOffset(self) -> float:
+    def _get_arrow_bounce(self) -> float:
         return self._arrow_bounce_offset
 
-    @arrowBounceOffset.setter
-    def arrowBounceOffset(self, value: float) -> None:
+    def _set_arrow_bounce(self, value: float) -> None:
         self._arrow_bounce_offset = value
         self.update()
+
+    arrowBounceOffset = pyqtProperty(float, fget=_get_arrow_bounce, fset=_set_arrow_bounce)
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
@@ -270,7 +276,7 @@ class GlucoseWidget(QWidget):
         painter.setFont(unit_font)
         painter.setPen(QColor(255, 255, 255, UNIT_ALPHA))
         unit_x = text_x + value_fm.horizontalAdvance(value) + 5
-        painter.drawText(QPointF(unit_x, value_baseline), "mmol/L")
+        painter.drawText(QPointF(unit_x, value_baseline), TEXT["unit"])
 
     def _draw_arrow_area(self, painter: QPainter, card: QRectF, active_color: QColor) -> None:
         circle_radius = 20
@@ -301,7 +307,7 @@ class GlucoseWidget(QWidget):
         if kind == "unknown":
             painter.setFont(self._font("mono_regular", 20))
             painter.setPen(QColor(NEUTRAL))
-            painter.drawText(QPointF(center.x() - 6, center.y() + 7), "?")
+            painter.drawText(QPointF(center.x() - 6, center.y() + 7), TEXT["neutral_trend"])
             return
         painter.setPen(QPen(QColor(active_color), 2.5, Qt.PenStyle.SolidLine,
                             Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
@@ -346,6 +352,7 @@ class GlucoseWidget(QWidget):
 
     def _update_error(self, kind, message: str) -> None:
         self._error_message = message
+        self._connecting = kind in {ErrorKind.NETWORK, ErrorKind.SESSION}
         self.update()
 
     def _refresh_state(self) -> None:
@@ -365,21 +372,21 @@ class GlucoseWidget(QWidget):
         self.update()
 
     def _value_text(self) -> str:
-        return f"{self._reading.value_mmol:.1f}" if self._reading else "--"
+        return f"{self._reading.value_mmol:.1f}" if self._reading else TEXT["no_value"]
 
     def _delta_text(self) -> str:
         if not self._reading or self._reading.delta_mmol is None or self._state is DisplayState.STALE:
-            return "–"
+            return TEXT["no_delta"]
         delta = self._reading.delta_mmol
         if abs(delta) < 0.05:
-            return "± 0.0"
+            return TEXT["zero_delta"]
         return f"+{delta:.1f}" if delta > 0 else f"−{abs(delta):.1f}"
 
     def _age_label(self) -> str:
         if self._reading is None:
-            return "GLUKOSE · KEINE DATEN" if self._error_message != "Verbinde …" else "GLUKOSE · VERBINDE …"
+            return TEXT["connecting_label"] if self._connecting else TEXT["no_data_label"]
         minutes = max(0, int((datetime.now(timezone.utc) - self._reading.timestamp).total_seconds() // 60))
-        return "GLUKOSE · JETZT" if minutes < 1 else f"GLUKOSE · VOR {minutes} MIN"
+        return TEXT["now_label"] if minutes < 1 else TEXT["age_label"].format(minutes=minutes)
 
     def _screen_removed(self, *_):
         QTimer.singleShot(0, self._ensure_visible)

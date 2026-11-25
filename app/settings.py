@@ -3,7 +3,7 @@ from __future__ import annotations
 import configparser
 import math
 import os
-import platform  # Compatibility: rename tests patch the shared platform module.
+import platform as platform  # Compatibility: rename tests patch the shared platform module.
 import tempfile
 from dataclasses import dataclass
 

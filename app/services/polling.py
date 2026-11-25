@@ -33,7 +33,7 @@ class PollResult:
 
 def classify_error(exc: Exception) -> ErrorKind:
     from pydexcom import errors
-    from requests.exceptions import RequestException
+    from requests.exceptions import RequestException  # type: ignore[import-untyped]
 
     if isinstance(exc, errors.AccountError):
         return ErrorKind.AUTH
@@ -47,7 +47,7 @@ def classify_error(exc: Exception) -> ErrorKind:
 def create_client(credentials: Credentials) -> Any:
     from pydexcom import Dexcom
     from pydexcom.const import Region
-    from requests.adapters import HTTPAdapter
+    from requests.adapters import HTTPAdapter  # type: ignore[import-untyped]
 
     class TimeoutAdapter(HTTPAdapter):
         def send(self, request, **kwargs):
